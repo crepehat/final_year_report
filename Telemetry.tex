@@ -1,0 +1,205 @@
+%!TEX root= ./master.tex
+
+
+\chapter{Telemetry}
+\section{Abstract}
+A system has been developed which uses a TP-Link wr703n wireless router powered via the car's battery to relay the data from the CAN bus and the ADL3 to a remote computer through two methods simultaneously - one for each system. The first uses the IP allocation feature in MOTEC software to direct all traffic from the local IP of the onboard router to the MOTEC process. This allows data log files to be downloaded remotely from the ADL3, but does not provide a real time feed (The ADL3 does not support real time data output). The second method utilises the router's onboard USB connection, and encapsulates USB packets in IP packets in order to relay them over a standard 802.11g WiFi network. This is to provide a live feed of data from the CAN bus to the laptop.
+
+\section{Introduction}
+One of the tasks identified by integration to be of use to the 2013 car is the implementation of a wireless link between the car and the laptop used on track days to monitor the sensors on the car. In order to achieve this successfully, there are two systems on the car which need a wireless interface. They are the CAN bus, and the ADL3. The CAN bus provides a live stream of data from the car as seen by both the ECU and the ADL3. The ADL3 contains log files derived from the CAN bus, used in data analysis programs by all subteams. The most important aspect of this project was understanding the way the CAN bus and the ADL3 interact with each other and with the PC which would normally connect to them via a wired interface. This paper will detail the solution that was created to interface correctly with these two systems to provide a complete wireless substitute for all wired connections required for data acquisition.
+
+\subsection{Problem Definition}
+\subsubsection{The ADL3}
+The ADL3, as mentioned in more detail previously, is a data logging device which takes the data passed through the CAN bus and creates a log file which can be used in the data analysis software for assessing the performance of all components being measured. Although the ADL3 is connected to the CAN bus, it should be noted that there is no way to download the log files it creates from the sensor data via the CAN bus. Log files instead need to be downloaded off the ADL3 using an ethernet connection which transmits standard IP packets via a TCP protocol (check protocol). The problem faced when trying to interface with the ADL3 becomes finding a method for directing IP packets from the car to a laptop.
+
+\subsubsection{The CAN bus}
+The CAN bus is connected to the ECU and the ADL3, and is the communications system over which all sensor data is transmitted. In order to convert between the two wires which normally carry CAN bus signals and a computer, a USB to CAN (UTC) converter is required. The UTC takes in the raw CAN bus wires via a (microphone plug - check the actual name), and has a USB output plug in order to connect to a PC. This means that by attaching the UTC to the car permanently we can have a USB output onboard the car. The problem that needs to be solved is therefore reduced to creating an interface between a remote USB port and a computer wirelessly.
+
+figure of UTC
+
+\section{Literature Review}
+\subsection{Introduction}
+There were several things which needed to be considered when deciding on the method that would be used for the telemetry solution. The first was that ethernet cables transmitting IP packets are the main way to interface with the ADL3. This immediately suggested that a wireless router would be well suited to this system. The second thing that was considered was the fact that a usb interface would be required to interact with the CAN bus. This made the decision to go with a router less of a certainty, since the interfacing of a USB device with a router is less trivial than that of an ethernet cable.\\ 
+The transmission of data wirelessly is a growing field of interest in today's world of convenience. As such, many projects address similar problems to those faced in the search for a telemetry solution for the 2013 MUR car. The following literature review outlines the different approaches taken by others who have encountered similar issues, and the decisions by the Electrical subteam that led to the solution developed.
+
+\subsection{Review}
+\subsubsection{MOTEC Solution}
+MOTEC offers its users the option to purchase a proprietary MOTEC solution to a telemetry link. The MOTEC ADL3 comes with all the features built in required to do this, however in order to simply turn these features on, and obtain access to a live data stream, you need to pay MOTEC \$1,212.50 AU for a password which is entered into the device to activate the desired feature (Part No. 25021\cite{MOTEC_prices}). In order to also be able to download the log files via this telemetry link costs and additional \$1,346.40 on top of the initial telemetry link upgrade (Part No. 25022\cite{MOTEC_prices}). In addition to these two upgrades, the physical radio link is made using a Radio RFI-9256, which retails for \$1,706.56 (Part No. 61064). This radio link takes the proprietary MOTEC communication packets produced by the ADL3 once it has had the telemetry activated, and relays them to the PC, using an undocumented and closed source communications protocol. In all conversations team members had with MOTEC retailers, all service representatives for MOTEC where unable and unwilling to release any details about the details of this solution. When the price for the complete solution comes to \$4,265.46, plus $\approx \$100$ in cables and power supplies, it comes as little surprise that MOTEC are unwilling to discuss the ways in which this solution works. 
+
+This price was deemed entirely unrealistic by both the Integration and Coordination subteams, who are in charge of all purchases for the team. It was decided that our own solution would be researched instead.
+
+\subsubsection{Connecting the ADL3}
+The ADL3 uses the TCP protocol over IP via a physical layer connection (TCP/IP) in order to connect to a PC for downloading log files\cite{MAN_ADL3}. These three components of the communication system utilised by the ADL3 are classified as follows. The Transmission Control Protocol (TCP) resides on the Transport layer of the Open Systems Interconnection model\cite{zimmermann1980osi}. The purpose of the TCP protocol is to avoid congestion,\cite{allman1999tcp}, as well as ensuring that no packets are lost during transmission \cite{postel1981transmission}. The Internet Protocol (IP) link is on the Network layer\cite{zimmermann1980osi} and manages the connections between sources and destinations, which are identified by fixed length addresses\cite{postel1981internet}. These two layers are currently handled by the operating system running on the PC and the software onboard the ADL3 itself, as stated in the user manual of the ADL3\cite{MAN_ADL3}. The only remaining layer, and the one which is of interest in implementing a wireless solution, is the physical layer \cite{zimmermann1980osi}. The OSI model is displayed in Figure \ref{TEL_osi_model_7_layers.png}
+
+\begin{figure}[h!]
+  \caption{The 7 layer OSI model used to categorise the different layers used by any digital communications protocol}
+  \centering
+    \includegraphics[width=0.5\textwidth]{Images/Telemetry/TEL_osi_model_7_layers.png}
+    \label{TEL_osi_model_7_layers.png}
+\end{figure}
+
+
+The physical layer connection used on previous years' cars took the form of an Ethernet cable plugged directly between the ADL3 and the PC onto which the data was being downloaded. The theoretical maximum throughput for the current revision of the IEEE 802.3 Ethernet standard is 40Gbit/s \cite{802_3}, far outstripping the ADL3's claimed theoretical maximum of 3.2Mb/s\cite{MAN_ADL3}. This was evident in the fact that previous year's wired data transmission systems worked without any bottlenecking occurring. This means that any alternative wireless physical layer replacement only needed to reach a practical maximum of >3.2Mb/s. Fortunately, that transfer rate is easily achievable by most physical layer standards today, meaning any well supported wireless physical layer protocol would suit the needs of the solution.
+
+There were several alternatives to the wired 802.3 Ethernet connection implemented by last year's team. These include IEEE 802.11b/g/n/, IEEE 802.15.1 Bluetooth, or a form of Radio Link Protocol, such as the one defined in IEEE 802.20 \cite{802_20}. One of the things to consider though is the fact that the ADL3 itself uses a reduced version of the 802.3 ethernet protocol, with two twisted pairs from the output plug of the ADL3 which conform to IEEE 802.3 being the only possible output from the device\cite{MAN_ADL3}. This means that any device required to provide a wireless physical link will require an Ethernet input, and the ability to convert from the IEEE802.3 standard to the wireless standard implemented in the wireless solution. This immediately suggested that a wireless router would be suitable for this application.
+
+The role of wireless routers is to provide a Dynamic Host Configuration Protocol (DHCP) server in order to provide the application layer link between all devices connecting to the router, normally to distribute TCP/IP packets between these devices\cite{doyle2005routing}. The way this DHCP server works, is that any device connected to a router will be assigned an unused IP address somewhere within the standard local IP domain. This usually ranges anywhere from 192.168.1.1 to 192.168.255.255\cite{MAN_OPENWRT}. It is entirely dependent on the software installed on the router, but the address assigned is always readily accessible and able to be changed via the user interface for the router\cite{MAN_OPENWRT}. This means that in order to establish a connection between a router connected to the ADL3 and the PC which wireless analysis is to be performed on, it is a simple matter of determining which IP address gets assigned by the router to the ADL3, and pointing the MOTEC software to that IP address\cite{MAN_ADL3}. The fact that most routing technology is designed to handle TCP/IP packets as its most fundamental role means that a router would be the most practical and easily implemented wireless solution. This is because the ADL3 deals solely in TCP/IP packets. This meant that unless the CAN Bus used a different protocol, a wireless router would provide a simple alternative to the physical layers, with all other layers being handled by the ADL3 and the Operating system of the connected PC.
+
+\subsubsection{Connecting the CAN Bus}
+Unfortunately, the CAN bus, unlike the ADL3, uses a USB connection to interact with PCs\cite{MAN_UTC}. This is a disappointing inconsistency in MOTEC's data management solution, which adds a layer of complexity to any solution which provides connectivity for both the ADL3 and the CAN bus. By only offering a physical layer link to the CAN bus via the USB standard, MOTEC has made the router option discussed for the ADL3 a slightly less viable option. This is because creating a link between a PC and USB device via a device designed to transfer IP packets becomes difficult. Many commercial routers today offer the ability to provide USB connectivity for things such as USB storage devices or printers\cite{REV_ROUTERS}. The problem with solutions such as this is that the router does not provide a direct link from the USB device attached to its USB port to the PCs connected to the router in the same way it does via its DHCP server for TCP/IP packets. Instead, what it does is create either a local file or printer server onboard the router itself, which then distributes files to and from the USB storage device or printer as if the router were a PC itself. This can be seen in Figure \ref{TEL_usb_printer_support}.
+
+\begin{figure}[h!]
+  \caption{An example of the settings for using a router as either a print server or a USB server, in the popular open source router software, DD-WRT}
+  \centering
+    \includegraphics[width=0.5\textwidth]{Images/Telemetry/TEL_usb_printer_support.jpg}
+    \label{TEL_usb_printer_support}
+\end{figure}
+
+In order for a router to be able to perform the same distribution service for the CAN bus as routers can easily do for USB storage devices, the router itself would need to be running the MOTEC software, much in the same way that the routers run file and printer servers for USB mass storage devices and printers. This is because the USB protocol is designed to provide a complete solution to the communication system normally defined by many layers in the OSI model\cite{zimmermann1980osi}. This means that once the physical link layer connection is established, the USB protocol provides a self sufficient connection between the two devices, provided the correct drivers are installed in the operating system of each device\cite{MAN_USB}. This self sufficiency, whilst proving hugely convenient in most applications, also causes one of the major downsides to the USB Interface. This downfall is that it's not designed to interface with any communications protocols other than those defined within the self sufficient USB standard itself. There are a few protocols which can use the physical USB Bus for communication, such as the Host Controller Interface\cite{MAN_HCI}, however TCP/IP is definitely not one of these protocols\cite{doyle2005routing}. This is because the physical connections between networks which run the TCP/IP protocol usually contain many interconnected devices, in the true sense of a network. A network between devices via USB is always a one to one connection. This means that very little attention has been given to interfacing USB devices with a TCP/IP network, since the typical use of the two technologies are inherently incompatible.
+
+This fundamental incompatibility between USB networks and TCP/IP networks meant that, as convenient as it was for the ADL3, a router may not be the best choice for the CAN bus. The alternative solution would be to run some form of computer onboard the car which was able to run the MOTEC software locally to provide the one to one connection required by the USB protocol used by the CAN Bus\cite{MAN_UTC}. There are myriad shields and plugin devices for self contained computing devices such as the Arduino or Raspberry Pi, which are capable of offering all manner of functionality from their respective boards, including access to wireless Physical Layer connections such as IEEE 802.11\cite{shieldlist}\cite{raspberry_pi_wireless}. If such a self contained device were able to run the MOTEC software, and provide a wireless link to a PC, there is the possibility that it would be able to take the live data stream from the MOTEC software, port it into another program running on the computer, and then transmit that via the TCP/IP protocol. This was a very promising solution, however upon further investigation into the communications protocols used by MOTEC, it was discovered that all their software is very much closed source\cite{MAN_ADL3}. As well as its closed source nature, the CAN monitoring software offers no method to provide a live stream of its data to another program within the operating system\cite{MAN_ECU_MANAGER}. This meant that in order to extract the data from the CAN bus on the onboard computer, which is the crux of this approach, a painstaking reverse engineering process would need to be completed on the incoming packets directed to the MOTEC software at the application layer, which would eventually lead to a piece of software that potentially breached intellectual property copyright law. The final issue with this solution is that MOTEC offer no support for the UNIX platform in their software, which is what is run on the majority of the small high powered computing devices such as the Raspberry Pi, due to their ARM based processors\cite{raspberry_pi_windows}. This would mean that even if a method was created for extracting the data from the MOTEC software for transmission over the TCP/IP link on Microsoft Windows, there would be no way to run the MOTEC software onboard the car on a microcomputer. This meant that there was no alternative but to find a method for transmitting USB packets via the IEEE 802.11 WiFi physical layer so that they may be processed at the destination PC by the MOTEC software, rather than onboard the car.
+
+\subsubsection{Router and Software Selection}
+One of the advantages of using a router in this solution is the processing power it would provide. This is due to the fact that routers need to perform what is an inherently processor intensive task - the processing and allocation of IP packets to each of the devices connected to it\cite{doyle2005routing}. Because of this, more and more powerful microcontrollers are attached to routers, and significant amounts of RAM are often present onboard the routers. This processing power and memory size has reached the point where routers today are easily capable of performing auxiliary tasks alongside the arbitration of IP packets. 
+
+The review of many forums concerning the use of routers for projects such as this\cite{openwrt_buyersguide}\cite{ddwrt_supporteddevices}, led to the conclusion that the router best suited to the requirements of this project was the TP Link wr703n, as seen in Figure \ref{TEL_router}. The small form factor and low price have caused many DIY projects to incorporate these devices\cite{wr703n_instructables}\cite{wr703n_hackaday}. They are readily available off ebay for a minimum of \$24.68\cite{wr703n_price}, several orders of magnitude less than the price of the MOTEC solution. The size of the community using these routers has led to an extensive knowledge base online, which would assist the team during the development of a solution to this unique problem. The many hours that have gone into useful online guides on this router made the decision on router selection straight forward. No other router offers the same level of functionality, online support for open source projects, and form factor.\\
+
+\begin{figure}[h!]
+  \caption{The TP-Link wr703n Wireless router}
+  \centering
+    \includegraphics[width=0.5\textwidth]{Images/Telemetry/TEL_router.jpg}
+    \label{TEL_router}
+\end{figure}
+
+In terms of software however, there were three options considered. The first option was to use the stock operating system which came loaded on the router. Unfortunately it became immediately apparent that this was not viable, since the Graphical User Interface (GUI) consisted of instructions entirely in mandarin, as can be seen in Figure \ref{TEL_wr703nfirmware}. Besides this, the stock firmware only provided basic functionality, and does not allow the utilisation of open source projects. The second option was DD-WRT. An open source software package for any Wireless Receiver Transmitter. The third option, very similar to DD-WRT, was OpenWRT.
+
+\begin{figure}[h!]
+  \caption{The stock firmware that came with the wr703n}
+  \centering
+    \includegraphics[width=0.5\textwidth]{Images/Telemetry/TEL_wr703nfirmware.jpg}
+    \label{TEL_wr703nfirmware}
+\end{figure}
+
+
+Of these options, it was decided that OpenWRT has the largest amount of online support\cite{wr703n_instructables}\cite{wr703n_hackaday}\cite{MAN_OPENWRT}\cite{openwrt_buyersguide}, and would streamline the implementation of the solution due to the large amount of online support available.
+
+Finally, the only software package available for performing the required encapsulation of USB packets inside IP packets was a package aptly called USBIP\cite{USBIP_homepage}. This software provided the mappings necessary between the USB protocol and the IP protocol\cite{MAN_USBIP}, allowing all packets received by the router to be directly routed to the destination PC over the 802.11 network. This was a fortuitous discovery since performing this conversion would require an intimate knowledge of the two protocols at the lowest level. It was also discovered that this package had been experimented with on the wr703n we had decided on for our solution by a programmer by the name of Madox\cite{madox_wr703n}\cite{madox_exampleusbip}. This was significant find, and confirmed our choice of router and software to be a possible solution to the problem at hand.
+
+\subsection{Conclusion}
+
+After researching all options available for the creation of a solution to this problem, it became apparent that using a wireless router would be by far the superior approach. The prohibiting price immediately ruled out what would most likely be the most straight forward implementation - the proprietary solution offered by MOTEC. Also, using an onboard miniature computer running MOTEC software to solve the issue of the incompatibility between the USB physical layer and the TCP/IP Network and Transport layers was an impossibility due to the logistical issues mentioned above. The router option, when paired with the USBIP software, promised to be able to provide the required functionality from the solution.
+
+\section{Implementation}
+Once the overall approach had been decided upon, there was still a significant amount of work in implementing the solution. The logistics of the implementation are discussed in this section.
+
+\subsection{Finding a USBIP ROM}
+Routers can be made to perform auxiliary tasks as discussed in the literature review by building a ROM which incorporates both the main operating system for the router, as well as the extra programs required. A ROM is the set of instructions which any computing device follows in order to act in the desired way, either according to inputs or internal cues in the ROM itself. Building a ROM for a proprietary device such as a commercial router is a task that requires a highly specialised set of skills, including an intricate knowledge of the architecture of the microcontroller on the chip, as well as a collection of all necessary libraries to incorporate the auxiliary programs into the base ROM for the router operating system chosen (in this case OpenWRT). This would take a substantial amount of time to set up and learn, and it was decided that it was in the best interest of the project to attempt to find a prebuilt ROM for this purpose. The community support for this router was after all one of the reasons for the decision to use it in the telemetry solution, due to the lack of specialised knowledge in the software involved in routers amongst the members of the team. After many failed attempts, a precompiled ROM was found which incorporated USBIP with the base OpenWRT operating system that had been decided upon\cite{madox_exampleusbip}. It had been compiled by a programmer who goes by the pseudonym Madox, a software engineer who has a blog detailing hobby projects he has undertaken using the skills he has developed over a career in software engineering\cite{madox}. This was a fortunate outcome since for a member of the team to compile and build such an image themselves would have been a daunting task, which falls well outside of the scope of the electrical engineering course. The ability to source this ROM from an external party is a testament to the decision making regarding the device with which the telemetry solution was implemented.
+
+
+\subsection{Bricking and the Hornet Bootloader}
+Despite strictly adhering to online instructions for the installation of ROMs onto the new ROMs where the results were not guaranteed, the first attempt to upload a new ROM resulted in bricking the device. 'Bricking' is the term used for any action which makes the device upon which you performed that action no more useful than a brick. Upon further reading of forums, it was discovered that there are multiple versions of the same router coming from exporters which use different pin configurations, but that are labelled incorrectly as the same build number. This change in pin configurations led to any ROMs built for the old configuration causing the ethernet connectivity of the board being lost. As well as this, if a wireless network had not been set up (as is the default case for all fresh ROMs), there was no way to connect to the board to change its settings, since both wireless and ethernet channels were unavailable. This was a frustrating revelation, and at the time appeared to have wasted one of these routers. After a few days of multiple attempts at establishing communication with the router, to no avail, it was decided that another router should be purchased. Upon purchasing the second router, a stock version of OpenWRT was successfully flashed onto the router after ensuring the correct build number had been determined. After experimenting with different versions of the OpenWRT ROM however, slight carelessness led to one of these ROMs rendering the new router once again bricked. At this point however, it was decided that bricking two routers was an unacceptable outcome, and a new router should not be purchased - the existing routers needed to be fixed. After considerable research, it was found that an alternative method of communication was possible between the router and a PC. By using the RX and TX pads present on the routers, an emergency bootloader called `Hornet' could be accessed through which basic functionality could be restored to the boards. A bootloader is the initial instructions run on a chip which define the methods used by the rest of the ROM and how they correspond to that chip in particular. The instructions on how to access this bootloader were minimal, since it was assumed that anyone attempting to perform such operations on the board were experienced with interfacing serially with chips. Despite this lack of documentation, after much research, trial, and error, the serial method of communication was successfully implemented. This involved using the FTDI chip onboard an Arduino as a USB to serial converter as well as a serial monitor on the PC to establish a connection with the board. A photo of the configuration required to achieve this can be seen in Figure \ref{TEL_hornet}. After this method was mastered, both boards were now able to be flashed with any ROM required, without the fear of losing communication via the ethernet port. This was due to creating a hardwired interface with the board that would always be functional, despite loading any ROM which didn't align with the correct pin configuration of the router. This interface took the form of two wires soldered to the RX and TX pads on the motherboard of the router. This was a significant breakthrough, and led to much higher levels of productivity due to the safety with which new ROMs could be flashed to the router, despite not having absolute certainty about their compatibility. It also meant that there were now two perfectly functional routers, one of which could be used on last year's car before it became decommissioned.
+
+\begin{figure}[ht]
+  \caption{The Arduino being used as a USB to serial converter in order to communicate with the wr703n}
+  \centering
+    \includegraphics[width=0.8\textwidth]{Images/Telemetry/TEL_hornet.jpg}
+    \label{TEL_hornet}
+\end{figure}
+
+\subsection{TCP/IP over IEEE 802.11 for the ADL3}
+As was a result of the original selection criteria where a wireless router was chosen, once a fully functional version of OpenWRT was running on the router the 802.11 link was trivial. It was a simple matter of using the GUI that had come with the OpenWRT ROM (called LuCi) to navigate to the relevant section and determine the IP address that had been allocated by the router to the ADL3. Once this address had been determined, the ADL3 manager software needed to be pointed to this IP address, and the link was established automatically. This allowed remote access to the logged data from all sensors on the car, which was immediately beneficial, as it decreased the time wasted with someone plugging their computer into the car every time log files were needed. It did not however grant access to a live data stream, as was the main aim of this project. For that, the ability to establish a usb connection with the car was required, as is detailed in the next section.
+
+\subsection{USBIP over IEEE 802.11 for the CAN Bus}
+Once the USBIP ROM had been successfully installed on the router, there were a few tweaks required both in the router software and the PC which was to connect to the CAN bus via USB in order to successfully create the USB link to the remote PC. The correct procedure for binding a computer to the remote USB device were detailed both in the USBIP documentation\cite{MAN_USBIP} and Madox's tutorial\cite{madox_exampleusbip}. The binding requires a command line instruction to be run by the user which initialises the USBIP package onboard the computer which then connects to the IP address specified and establishes the connection to the remote USB device. Running this command line instruction is not a simple task however if you are unfamiliar with the process, and as with all software solutions developed, ease of use should be a core objective. With this in mind, a batch file was created which would execute the instruction to bind the USB connection to the PC, as well as a separate instruction to safely disconnect. This batch file can be seen in Figure \ref{TEL_usbipbatch}. The instructions for the use of this batch file was documented for future years on the team wiki, and it was demonstrated in person to all members of other subteams who may be responsible for the wireless monitoring of data in the field in the absence of EE subteam members. Significant stages in the process of implementing the telemetry solution can be seen in figures \ref{TEL_usbip_installed}, \ref{TEL_functioning} and \ref{TEL_readout}.
+
+\begin{figure}[ht]
+  \caption{The Batch file created to automatically change the target directory to the relevant folder and bind the USB device to the PC}
+  \centering
+    \includegraphics[width=0.8\textwidth]{Images/Telemetry/TEL_usbipbatch.png}
+    \label{TEL_usbipbatch}
+\end{figure}
+
+\begin{figure}[ht]
+  \caption{After three failed attempts at entering the IP address for the Router in the command prompt, here we see the first successful attempt at connecting to the CAN Bus wirelessly}
+  \centering
+    \includegraphics[width=0.7\textwidth]{Images/Telemetry/TEL_usbip_installed.jpg}
+    \label{TEL_usbip_installed}
+\end{figure}
+
+\begin{figure}[ht]
+  \caption{The test wireless setup for the car. The grey USB cable going into the router is from the CAN Bus onboard the car, the white USB cable from the router to the laptop is only providing power to the router, as a method for powering the router off the car had not yet been developed. The laptop is showing readouts from the sensors onboard the car, as can be seen from the gauges in the software running on the screen.}
+  \centering
+    \includegraphics[width=0.7\textwidth]{Images/Telemetry/TEL_functioning.jpg}
+    \label{TEL_functioning}
+\end{figure}
+
+\begin{figure}[ht]
+  \caption{This is a more detailed view of the live data now available to the user wirelessly via the MOTEC software and the installed router.}
+  \centering
+    \includegraphics[width=0.7\textwidth]{Images/Telemetry/TEL_readout.jpg}
+    \label{TEL_readout}
+\end{figure}
+
+\subsection{Powering the Router}
+The next issue to deal with was determining how to power the router from a power source that would be present on the car. In order to do this, a 5V rail capable of delivering enough current to power the router was required. 
+
+There were two possible methods to deliver 5V from the car. The first was by using one of the 5V rails which comes off both the ECU and the PDM. This is convenient since the voltage is already regulated, and can be relied upon to remain at 5V, regardless of battery charge. The second option was by taking any power line from the PDM, and regulating the voltage down to 5V using a voltage regulator. The advantage of the first option is that it does not require any additional circuitry, since it merely requires the rail to be connected directly to the router. The disadvantage of this preregulated 5V rail was that it has a maximum current rating of 200mA, and would thus be unsuitable for the router if it required any more current than this. Regulating a line from the PDM through circuitry designed by the team on the other hand can draw either 8A or 20A, depending on the line it is connected to. This means that all that was needed was to determine what current range the router falls into: 
+\begin{align*}
+\text{ECU 5V Rail:  } &\text{Current required $<$ 200mA}\\
+\text{PDM Low Current Rail:  } &\text{200mA $<$ Current Required $<$ 8A}\\
+\text{PDM High Current Rail:  } &\text{8A $<$ Current Required $<$ 20A}
+\end{align*}
+
+\subsubsection{Determining Current}
+Since the router is essentially a consumer product, no data sheet is available in the sense of what you would expect for an electrical component. All that was available is a user manual, which didn't provide current levels required by the router. In order to determine the current specifications that the power line would have to adhere to, the router was connected to a power supply which has a current usage display, and the current usage of the router would be monitored. Although this did not deliver a highly accurate result, the required accuracy from the measurement was fairly low, so this was an acceptable method for determining which type of power line to use. It was observed that during its power up cycle the router used up to but no more than 2A, and then idled at roughly 100mA. This meant that despite normal operation of the device only drawing enough current to warrant a low current ECU/ADL 5V line, the transient current requirements observed during the boot sequence are sustained for a period of 5-6 seconds, meaning that a 200mA rated line would be unsuitable, and the device may not be able to correctly initialise. This meant that a low current PDM line would be the best suited to the device, and a voltage regulator would be required.
+
+\subsubsection{Voltage Regulation}
+The voltage level on all lines of the PDM are derived either from the voltage of the REG/REC whilst the engine is running, or the battery voltage before the engine has been ignited. The Regulator is designed to output a voltage of 14.4V, to account for voltage drop if high levels of current are drawn. The battery voltage is rated at 12.8V, but this drops as charge is lost from the battery. This means that a maximum voltage of approximately 15V needs to be regulated down to 5V, with a maximum of $\approx$ 1A of current being drawn, but a steady state current of 100mA. The power dissipated by a voltage regulator at these specifications is equal to:
+
+\begin{align}
+P = &V_{dif}\times I\\
+= &(V_{in} - V_{out})\times I\\
+\therefore \nonumber\\
+P_{transient} = &(15 - 5) \times 1\nonumber \\
+= &10W\\
+P_{steady state} = &(15 - 5) \times .1\nonumber \\
+= &1W
+\end{align}
+
+In order to ensure correct operation of our router without damage to either the regulator or the router, the maximum power dissipation as well as the maximum current required needed to be considered to ensure the component chosen met these requirements. The first option explored was the high power 5V voltage regulator provided in the design and build labs - the LM7805. Upon inspecting the datasheet, it was found that this component met the requirements for the router. Despite stating on the first page of the datasheet that the LM7805 is only rated to a maximum of 1A\cite{MAN_lm7805}, the diagram seen in Figure \ref{TEL_lm7805current} shows that for a voltage differential of 10V it can in fact provide current up to approximately 2.25A. Considering the current requirement of 1A is only transient, it was decided that this component would be a safe choice for voltage regulation for the router, despite operating around the threshold current output. A PCB was designed that could physically support the heatsink as well as providing headers to connect the 12V from the high power PDM line to the router. It also needed to be connected to two capacitors as seen in Figure \ref{TEL_lm7805config} from the LM7805 datasheet\cite{MAN_lm7805}. This was all packaged inside a 3D printed case designed by the team as shown in figure (picture of 3D printed solution). The final configuration of this approach is shown in figure (picture of printed case).
+
+\begin{figure}[ht]
+  \caption{This graph shows that the maximum current output at a 10V differential as our circuit will have is approximately 2.25A}
+  \centering
+    \includegraphics[width=0.8\textwidth]{Images/Telemetry/TEL_lm7805config.png}
+    \label{TEL_lm7805config}
+\end{figure}
+
+\begin{figure}[ht]
+  \caption{This graph shows that the maximum current output at a 10V differential as our circuit will have is approximately 2.25A}
+  \centering
+    \includegraphics[width=0.8\textwidth]{Images/Telemetry/TEL_lm7805current.png}
+    \label{TEL_lm7805current}
+\end{figure}
+
+Once the voltage regulator was installed and the heatsink was attached, the heatsink arrangement inside the 3D printed case became painful to touch, and it was decided that this was inappropriate to put in the case as had been planned. Research into voltage regulation showed that an array of diodes before the voltage regulator would decrease the input voltage by introducing each of their forward bias voltages to the circuit, and would thus lower the power dissipation in the regulator. The diode array was implemented, and the router was left on for an extended period of time. The heat was observed to be far more reasonable after dropping the voltage using the diodes, as neither the diodes nor the LM7805 heated to the temperatures which the solitary LM7805 had reached. In fact, the majority of the heat had been transferred from the LM7805 to the diodes, which were far cooler than the LM7805 had been. Because of this the heatsink was able to be removed, saving space, another benefit to the diode array. This was decided to be the best voltage regulation method.
+
+Disappointingly, upon connecting the router to the car's battery for final testing, the router worked initially, but after a period of time stopped working. Debugging the motherboard revealed that the voltage regulator onboard the router itself had stopped working, potentially due to a failure of the team constructed voltage regulation device which could cause overvoltage to occur at the input to the router. Fortunately a second router had been purchased during the programming stages of the project, and that was able to be used instead. This time the voltage regulator was implemented with a larger heatsink replacing the diode array. It also differed in that it was a modular device with a micro USB plug that could power the router via the built in micro USB power port. This meant the connection no longer needed to be made directly to the motherboard of the device, and the wr703n could be used in the case which it was manufactured in. This made for a more professional looking solution, as can be seen in Figure \ref{TEL_powerv2}.
+
+\begin{figure}[ht]
+  \caption{The final solution to powering the device off the car battery.}
+  \centering
+    \includegraphics[width=0.5\textwidth]{Images/Telemetry/TEL_powerv2.jpg}
+    \label{TEL_powerv2}
+\end{figure}
+
+
+\section{Results}
+Telemetry had infinite range and worked under all conditions with 0 downtime. Complete later.
+
+
+\cite{}
+
+
+
+

@@ -1,0 +1,274 @@
+%!TEX root= ./master.tex
+\graphicspath{ {./Images/Electrical_Harness/} }
+
+\chapter{Electrical Distribution Network}
+
+\section{Abstract} 
+
+An electrical harness has been created by the 2013 team which provides all required connectivity between all electrical components onboard the 2013 car. High priority was given to ensuring the harness met reliability goals, while keeping in mind the team focus on overall weight reduction. The final implementation of the electrical harness not only catered to the 2013 team's needs, but those of future teams as well. Carefully implementing standard practices that will meet future team's needs will enable many expensive components to be reused, not only saving funds that can be better spent elsewhere but also time sourcing replacements.
+
+\section{Introduction}
+
+The electrical harness, apart from the chassis, is the most vastly spanning component of the vehicle. It is also arguably the most complex component, consisting of the complex and carefully planned network of over 300 wires, each imperative to the reliable and safe operation of the MUR vehicle. The electrical harness can be considered somewhat analogous to the Central Nervous System of the vehicle. Despite the importance of this component, 2013 is the fist year where significant consideration has been given to the electrical harness. It has been thought of as no more than an inconvenient necessary network of wires between devices. Until 2013 this part was designed by the mechanical founded Integration section rather than the Electrical and Electronic section, and resultantly no scope for sufficient electrical engineering was included in its design.  In addition a majority of the implementation was done with little to no understanding as to why it was so, simply being copied from preceding designs, and nor were there any strong considerations with regards to the overlaying system operations such as the CAN bus.
+
+\section{Problem Definition}
+
+In 2013 the electrical harness has for the first time been the responsibility of the Electrical and Electronic section of MUR Motorsports, where it has been recognised that there is much to be gained by thinking of the task not only to produce physical branches of interconnecting wires but rather the implementation, consisting of both hardware and software, of the various electrical and electronic systems that enable the vehicle to operate efficiently and as desired.  Every possible minute detail has been considered meticulously yet not unnecessarily, which has resulted in a much more reliable, easier to work with, many times lighter, much more presentable and unobtrusive electrical harness that is tightly coupled with the overlaid electrical and electronic systems in what is now referred to as the ‘Electrical Distribution Network’.  Internationally recognised military specifications have been closely adhered to where appropriate in an attempt to ensure both a strong understanding of all aspects of the design as well as the realisation of a high quality product.
+
+\section{Implementation}
+
+\subsection{Conceptual Model}
+
+In order to aid design a simple Electrical Distribution Network conceptual model was determined in order to help characterise the functions of the system by partitioning it into abstract layers.  This model was not intended to be of any more importance than a good mental aid and reminder to consider the macroscopic functionality of the overall electrical system rather than simply the physical system separately.  Three categorical layers were determined in Figure \ref{fig:EDN_model} .
+
+\begin{figure}[h!]
+	\centering
+	\begin{tabular}{ l l }
+	  Top	&	Software \\
+	  Middle	&	Electrical Signals \\
+	  Bottom	&	Physical Medium \\
+	\end{tabular}
+	\caption{Electrical Distribution Network conceptual model}
+	\label{fig:EDN_model}
+\end{figure}
+
+From the bottom up, the physical medium is representative of the electrical harness; including wire gauging, insulation material, twisted paired wiring, routing, protective shielding and connectors and terminals.  The Electrical Signals layer as to remind for consideration of the type of signal to be transported within a particular component of the electrical harness and any ideal requirements it may have.  The Software layer, which will be described in further detail in more appropriate sections of this report such as CAN Bus and Ethernet digital communications, is symbolic of the purpose and usage of the signals being transported between devices and is included for completeness.
+
+\subsection{Electrical Harness}
+The electrical harness is the carefully structured web of physical interconnections between the myriad of various sensors and devices, both internal and external to the vehicle.  The three primary sub systems consisting of vehicle management, electrical power distribution and data acquisition each have varying requirements and in some instances overlap.  The discussion on the decisions and design of the various components of the electrical harness will be broken down in the following paragraphs explaining their reason for implementation due to their requirements.
+
+\subsubsection{Harness Routing}
+Apart from the chassis, the electrical harness is the most vastly spanning component of the vehicle.  As such, careful planning and cooperation with each of the other development sections of MUR Motorsports is necessary to ensure parts do not obstruct and safe and reliable routing is possible.  The shortest path is not necessarily the best path with many important considerations to be made.
+
+Of course, the minimal use of material is desirable, however it is also just as important to ensure the routed branches are neat and tidy for a professional finish, distant from animated parts that could pose a threat to the reliability of the harness, as well as unobstructed by other components.  
+
+Another important consideration is the routing of parallel wires that could cause undesirable cross talk and interference.  Being a vehicle with multiple high velocity rotating metal components, protection against EMI is imperative with such a sensitive data acquisition network of sensors creating and small signals to be measured.  In particular, avoiding parallel running wires carrying different signals, such as power distribution wiring and sensor and data wiring, in order to prevent cross talk made a large impact on the routing design process.  As a result it was decided to, where possible, keep the unfiltered power distribution to the left side of the vehicle and the more sensitive wiring to the right.
+
+In order to ensure a neat and tidy harness, while some initial planning was performed using 3D CAD, ultimately the harness was built in the chassis to ensure the most appropriate wiring lengths and routing was implemented, given that the vehicle is a one off prototype.  While the decision was made to not divide the harness up into sections due to the vehicle being relatively small, modularity of the harness was introduced with the decision to not have the primary harness branch out to each of the electrical components, but have a connector fixed to a point on the chassis and a simple pigtail branch between the electrical component to the primary harness.  This decision, utilising a defined standard connector as discussed later, also brings the benefit of the ability to easily implement a different make or model of the same component using a different connector without modification to the primary harness.
+
+\begin{figure}
+	\centering
+	\begin{subfigure}[b]{0.4\textwidth}
+		\includegraphics[width=\textwidth]{Harness_CAD.jpg}
+		\label{fig:Harness_CAD}
+	\end{subfigure}
+	\begin{subfigure}[b]{0.4\textwidth}
+		\includegraphics[width=\textwidth]{Harness_String_Lengths.jpg}
+		\label{fig:Harness_String_Lengths}
+	\end{subfigure}
+	\caption{Planning harness routing using both 3D CAD and physical string prior to build}
+	\label{fig:Harness_Planning}
+\end{figure}
+
+\subsubsection{Electrical Power Distribution Management}
+
+In order for any electrical devices to operate first they must have a sufficient power supply.  A basic overview of the electrical distribution system of the vehicle is as follows.
+
+There are two sources of electricity in the vehicle.  Firstly there is a charged 
+y, which ideally is only used to provide enough energy to the electrical starter motor to begin the ignition process of the internal combustion engine.  This also has the added bonus of acting as a large electrical filter, able to provide some electrical charge should the other source of electricity, the alternator, be temporarily insufficient to meet the immediate demands of the overall electrical system.
+
+The alternator is an electromechanical device that converts mechanical rotational energy provided by the running engine, in our case into 3 phase alternating current.  In order to make this output useful we use a device containing both voltage regulation and rectifying functionality to produce a steady 14.4V, 35A maximum output.  The alternator provides charge for the battery and the other electrical components of the vehicle while the vehicle is in operation.
+
+\begin{figure}[h]
+	\centering
+	\includegraphics[width=0.6\textwidth]{CBR600_Power_System.png}
+	\caption{Honda CBR600RR electrical charging system \cite[17-2]{CBR600_Manual}}
+	\label{fig:CBR600_Power_System}
+\end{figure}
+
+In order to safely control the electrical power to the vehicle, a key operated isolation switch is situated in between the above sources of electricity and the \acrshort{pdm}.  With such a configuration power from either the battery or the alternator can be totally disconnected by virtue of the isolation switch state.
+
+In most traditional automotive applications, control of power supply to individual sub circuits is dictated through the use of electromechanical relays.  In such a small vehicle as this, such relays, especially for so many circuits, becomes very bulky and heavy.  However, we have incorporated the use of a powerful \acrshort{pdm} by Motec.  This programmable device replaces electromechanical relays with programmable solid state circuitry, resulting in a much more compact and lighter solution as well as expanding the possibilities of control through the programmability of the unit.
+
+The \acrshort{pdm}, at its most fundamental functionality, distributes electricity from the vehicles electrical power source's through 15 different outputs.  Each of these outputs can  be switched on or off using complex conditional rules via a combination of digital switch signal inputs, \acrshort{can} messages and logic functions.  Unlike traditional relays, with over 200 logic operations available it's possible to control these outputs to function as signals for use by other devices, such as pulsing or flashing.
+
+In order to make full use of this flexibility, all electrical devices are now powered through the \acrshort{can}.  With 8 25A continuous rated and 7 10A continuous rated outputs  careful planning went into the allocation of the vehicle's devices to particular outputs.  Due to the limited number of outputs and since many devices will never require special conditions, devices that are sure never to require different power on requirements were grouped together onto the same output channel where possible.  A careful analysis of logged data from the 2012 year provided the details to determine the current requirements of most of the devices, helping organise which devices can be grouped together safely on either an 10A output or a 25A output.  In some cases devices were grouped in a bid to increase safety, such as combining the ignition coils and the fuel pump power supplies onto the same channel such that the injectors will also cease to operate when the fuel pump has been controlled not to, as otherwise residual fuel in the fuel lines may still be injected into the engine cylinders for a short time even after the fuel pump has been disabled.
+
+The \acrshort{pdm} also contains fuse functionality on each of the outputs.  While each channel is capable of a maximum output of either 25A or 10A, they can be configured to trip and flag an error should the current draw go above this for too long.  How long this is depends on how high the current draw is; the higher the current the shorter the trip time.
+
+\subsubsection{Grounding and 0V Return Lines}
+
+Traditionally in aircraft and automotive design, the engine block and the chassis is used as a convenient common ground connection.  This enables devices to require only a positive voltage line with the ground either acting through the metallic case of the device in contact with a grounded plane or a short connection to a grounding point.  This comes with some undesirable consequences though.  Firstly, with all devices sharing a common ground, any noise created by one device will affect all others.  Secondly, often the material is insufficient to provide great conductivity for sensitive devices, such as many of the sensors in use.  As a result only insensitive devices are grounded through the chassis or engine block.  Sensitive devices, such as the sensors, are all connected to filtered and protected circuits.  Each circuit is only to serve similar types of devices with similar signals.
+
+\subsubsection{Wire Specifications and Selection}
+
+The careful selection of wire has been a disproportionate factor resulting in a much-improved electrical harness in 2013.  Wire has many properties all of which should be considered to maximise performance.  The construction of a wire contains a core conducting material covered by an insulating material, and it is the choice of these two and their configurations that dictate a wire's properties which can vary greatly.
+
+For example, the number of conducting core strands provides an indication of how flexible the wire will be; the more strands forming the core conductor the better the wire will handle bending, opposed to a solid core and is helpful for implementation in a small vehicle requiring very compact routing.  Additionally, due to the skin effect, at higher frequencies stranded wires have much greater conducting surface area and hence provide less resistance.
+
+In this vehicle we know that generally the following specifications must be met due to the devices to be used, routing proximity to high temperature areas of the vehicle as well as the frequencies we expect to record certain signals at:
+\begin{itemize}
+	\item Maximum Voltage = 20V
+	\item Maximum Operating Frequency = 250Hz
+	\item Temperature Range = 0 - 100\degree C 
+\end{itemize}
+
+In addition to the above, each run of wire will have varying requirements depending on the purpose of the wire, its length and where and how it is routed in the vehicle and will be customised appropriately.  Many multiple different types of wire were compared, however for this report we have short-listed the comparison to three types of wire available from three of our industry partners: Australian Arrow Pty. Ltd., Motec Pty. Ltd. and Cablex Australia.  The three types and their specifications have been compiled in Table \ref{tab:Wire_Comp_Specs} for a single 18\acrshort{awg} wire for comparison.
+
+\begin{sidewaystable}[c]
+	\begin{tabular}{ | l | l | l | l | }
+	\hline
+		 & AVSSH\cite{avssh_specs} & SAE AS22759/34\cite{fluroplastic_compare} & SAE AS22759/82\cite{fluroplastic_compare} \\ \hline
+		Conductor Strands & 19 & 19 & 19 \\ \hline
+		Conductor Strand Gauge & 23.5 & 30 & 23.1 \\ \hline
+		Conductor Diameter (mm) & 1.2 & 1.2064999999999999 & 1.19 \\ \hline
+		Conductor Material & Annealed Copper & Tin plated copper & Nickel plated high strength copper alloy \\ \hline
+		Conductor Resistance (20*C) (Ohm/km) & 23.6 & 20.399999999999999 & 21.1 \\ \hline
+		Outside Diameter (mm) & 1.8 & 1.8035000000000001 & 1.5349999999999999 \\ \hline
+		Insulation Material & Vinyl & XL-ETFE & PTFE+Polyimide Tape Wrap \\ \hline
+		Weight per Length (g/m) & 10 & 11.384 & 10.29 \\ \hline
+		Temperature Rating Max (Celsius) & 100 & 150 & 260 \\ \hline
+		Voltage Rating Max & 600 & 600 & 600 \\ \hline
+		Limiting Oxygen Index (D2863 ATSM Standard) & 45-49 & 36 & 95 \\ \hline
+		Water Absorbtion (D570 ATSM Standard) & 5.9999999999999995E-4 & 1E-4 & 2.9999999999999997E-4 \\ \hline
+	\end{tabular}
+	\caption{Comparison of 3 different types of wire for selection}
+	\label{tab:Wire_Comp_Specs}
+\end{sidewaystable}
+
+From the data it is clear that the performance of each of the conducting cores is very similar with minor and mostly negligible differences.  The most important factor when comparing these three however is the vast differences in maximum temperatures.  These maximum temperatures are dictated by the breakdown point of the wire's insulation due to heat.  While the copper cores will be able to handle much higher temperatures, the insulating materials will melt at much lower degrees.  As a result of significant voltage drop over a length of wire, which results from current demand through the wire's resistance, significant internal heat can be generated which can damage the insulation.  What this all means is that the greater the maximum temperature of the insulation, the greater the current that can be pulled through it.
+
+We can safely conclude that by using PTFE insulated wire we will be able to significantly reduce the size of the wire than if we were to use standard automotive wire.  The issue is how to determine the correlation between the specifications of a wire and it's ampacity to ensure reliability is retained with a much thinner and lighter electrical harness.
+
+\begin{figure}[h]
+	\centering
+	\includegraphics[width=0.8\textwidth]{DR22_Specs.png}
+	\caption{Table detailing the specifications of the implemented wire for different sizes \cite{nexans_dr22}}
+	\label{fig:nexans_dr22}
+\end{figure}
+
+Unfortunately and surprisingly it is not a trivial task to develop a model to even remotely accurately determine the current limit of a given wire.  There is an abundance of data freely available in the form of look up tables, correlating the ampacity of a single free standing wire to a wire size, however much of these are highly inaccurate and based on safe rules of thumb.  The inaccuracy is increased even further when arbitrary safety factors are suggested to be applied to account for different temperature rated insulations, ambient temperature, the number of wires in a bundle and whether the bundle is contained inside a conduit or in open air.
+
+\begin{figure}[h]
+	\centering
+	\includegraphics[width=0.4\textwidth]{wire_cutaway.png}
+	\caption{An illustration of the composition of a size 22 PTFE shielded wire.  The concentric twists of the core strands are clearly visible, as is the polyimide tape underneath the PTFE, which is key to the performance of the wire. \cite{nexans_dr22}}
+	\label{fig:wire_cutaway}
+\end{figure}
+
+It wasn't until as late as 1957 that an accurate method for solving this problem was developed, and it was done so by two two electrical engineers in a paper titled Neher–McGrath \cite{Neher_McGrath} .  Soon after, this method was translated into metric units from imperial, and incorporated into IEC 60287 \cite{IEC_60287} . However due to the complexity of applying this method, which is outlined as a flow diagram in Figure \ref{fig:IEC_60287_Flowchart}, it is only realistically useful with access to specialised simulation software that can calculate the outcome of different scenarios automatically.  
+
+\begin{figure}[h!]
+	\centering
+	\includegraphics[width=0.5\textwidth]{IEC_60287.png}
+	\caption{Flowchart showing outlining the method described in IEC 60287 for determining the current capacity of cables \cite{IEC_60287_Flowchart}}
+	\label{fig:IEC_60287_Flowchart}
+\end{figure}
+
+As it turns out, the PTFE insulated wire is so high performing that a large majority of our individual wiring minimum requirements would allow for wire so thin that most available connectors and terminals available would not be able to accommodate it.  As a result a majority of the wire, with the exception of a few high current devices such as the starter motor, can be made a minimum size 22\acrshort{awg}.  As a result, while increasing the safety margin by much more than necessary this still correlates to a approximate theoretical size reduction of about 67\% and a weight reduction of 70\% over the AVSSH option.
+
+\begin{figure}[h!]
+	\centering
+	\includegraphics[width=0.8\textwidth]{NASA_wire_derating.png}
+	\caption{Description of the derating procedure for wires by NASA\cite{MIL-STD-975M}}
+	\label{fig:NASA_derate}
+\end{figure}
+
+Apart from the obvious benefits of the PTFE insulated wire discussed above, it was acknowledged that there is certainly value in considering the flammability of the wire to be used to cover the worst case scenario.  Detailed in Table \ref{tab:Wire_Comp_Specs} are Limiting Oxygen Index ratings for each of the insulation types.  This rating is determined by a standardised testing procedure outlined by the American Society for Testing and Materials\cite{ATSM_D570}.  The value represents the minimum percentage concentration of surrounding oxygen at which the polymer will burn.  PTFE is by far the best performing material for non-flammability at 95\% and is also self-extinguishing.
+
+\subsubsection{Connectors and Human Interface Components}
+
+The MUR Motorsports vehicle is an open wheeled racing car, and as such it is exposed to very harsh elements such as dust and water.  The vehicle is also a prototype where constant maintenance and work calls for parts, such as connectors, to be easily disconnected and reconnected while retaining their reliability.  These parts are very likely to be recycled year to year where possible.  Finally, with little concern made with regards to the choice of such components it is likely there will be countless different makes and models on the vehicle causing difficulty sourcing replacements.
+
+As a part of the design and implementation of the electrical harness, new protocols were introduced with the aim of standardising the components, particularly connectors and terminals, used by the team.  In previous years    Australian Arrow Pty. Ltd. supplied the team with their proprietary connectors free of charge.  However, these proved unsuitable for the purposes of MUR, and so it was determined that it would be worth sourcing a more suitable connector.
+
+Key to this decision was the following requirements:
+\begin{itemize}
+	\item to use a single make and model of connector in as many instances as possible
+	\item the terminals must be easily removable from the housing, causing minimal damage, to allow for the housings to be reused
+	\item the connectors must be of a reasonable size
+	\item the connectors must be a sealed type for protection against dust and water
+	\item the connectors must be easily and inexpensively sourced
+\end{itemize}
+
+The above requirements would ensure that while the connectors do come with a cost, this cost would be reduced over a number of years of use producing a net benefit due to higher quality and easier to work with components.
+
+After some research it was settled to standardise connectors into 3 main makes and models.  Many of the engine sensors utilise AMP Junior Timer connectors and terminals, which connect directly to the sensor.  With such a large portion of these connectors in use it would not be worth creating adaptors to a different connector.  The Deutsch DT and DTM series of connectors was selected to be the primary harness interconnect connector.  This series of automotive connectors are designed for the exact harsh conditions and are commonly used in the motorsport industry.  Additionally to this numerous housings and terminals were already in our possession.  These Deutsch connectors are only suitable for upto 13A however, and as such are not suitable for the higher current connections.  Finally, Delphi Metri Pack connectors were also chosen as they meet all of the above requirements but can cover the higher currents that the Deutsch DTs cannot.
+
+\begin{sidewaystable}[c!]
+	\begin{tabular}{ | l | l | l | l | l | }
+	\hline
+		 & Deutsch DT Mini & Deutsch DT & AMP Junior Power Timer & Delphi Metri Pack 630 \\ \hline
+		Current Rating & 7.5 & 13 & 20 & 46 \\ \hline
+		Insertable Contacts & Yes & Yes & Yes & Yes \\ \hline
+		Ingress Protection & IP67 & IP67 & IP67 & IP67 \\ \hline
+		Wire Sizing & 16 to 24 AWG & 14 to 18 AWG & 16 to 24 AWG & 10 to 12 AWG \\ \hline
+		Maximum Temperature (Celsius) & 125 & 125 & 130 & 125 \\ \hline
+	\end{tabular}
+	\caption{Comparing the specifications of the chosen connector models}
+	\label{tab:connector_specs}
+\end{sidewaystable}
+
+Detailed in Table \ref{tab:connector_specs} is the ingress protection rating for each of the connectors.  This rating classifies and rates the degree of protection provided against elements such as dust, water, mechanical casings and electrical enclosures\cite{ip_rating} . Defined in IEC 60529, the notation is formatted as 'IP' followed by two digits.  The first digit is an indication to the level of protection against dust and the second against liquids with the lower numbers indicating less protection.
+
+In order to ensure any components in use themselves are durable to a measurable standard, where appropriate all components used are of an IP67 rating where possible.  IP67 is defined as being totally protected against dust and protected against temporary immersion in a liquid of between 15cm and 1m \cite{ip_rating}.
+
+In addition to the connectors, the human interfacing components, such as those used to form the dashboard, have also been selected with the same level of scrutiny. 
+
+\begin{figure}[h!]
+	\centering
+	\includegraphics[width=0.6\textwidth]{ip_ratings.png}
+	\caption{Ingress Protection Rating Chart\cite{ip_chart}}
+	\label{fig:IP_rating_chart}
+\end{figure}
+
+\subsubsection{Environmental Protection and Durability}
+
+Leading on from the discussion of ingress protection ratings, it should already be clear that there has been significant consideration towards implementing a reliable electrical distribution network.
+
+Rather than looking solely at the motorsport industry, a majority of attention research was instead pointed toward the aerospace industry.  While our vehicle will likely not ever transport someone beyond the Earth's atmosphere, there is much to be gained by understanding what sort of impact certain design decisions will have on the degree of reliability.
+
+\begin{figure}
+	\centering
+	\begin{subfigure}[b]{0.4\textwidth}
+		\centering
+		\includegraphics{good_crimp_illustration.png}
+	\end{subfigure}
+	\begin{subfigure}[b]{0.4\textwidth}
+		\centering
+		\includegraphics{bad_crimp_illustration.png}
+	\end{subfigure}
+	\caption{Illustrations depicting examples of good and bad crimped terminals}
+	\label{fig:bad_crimp}
+\end{figure}
+
+Many decisions were made not only on the components of the electrical distribution system but also of the build process and tools used.  For example, we know from suspension data that the vehicle can vibrate with sufficient magnitude up to anywhere around 150 Hz.  These vibrations can have dire consequences on the electronic systems housed inside the vehicle.  While efforts such as rubber and foam mounts is a good precaution for packaged electronic devices, avoiding the use of solder, particularly on the electrical harness, is of great importance.  The reason for this is that vibrations are well known to cause solder to fracture\cite{solder_vibrations,solder_vibrations2} .  Instead, good quality crimped connections should be used in place and performed using good quality tools.
+
+\subsection{Key Active Components}
+
+\subsubsection{LiFePo$^{4}$ Battery}
+
+From factory, the standard automotive battery that comes with the CBR600 engine in use is a Yuasa YTZ-10S lead-acid battery weighing 3.2kg.  Using a lithium-iron-phosphate battery back instead however, we were able to reduce the weight of the battery pack down to only 0.6kg; a total weight saving of 81.25\% .
+
+A LiFePo$^{4}$ chemistry cell, while lithium based, should not be confused with the more common lithium cobalt cells which most electronic devices, from mobile phones to cordless power tools, contain.  As is quite common knowledge those cells are infamously known for their spontaneous combustion, high sensitivity and product recalls.  LiFePo$^{4}$ cells are much more stable and do not suffer the same volatility, albeit at the cost of slightly less charge capacity.
+
+\subsubsection{Starter Motor}
+
+One of the more noticeable considerations was to also provide power to the starter motor from the \acrshort{pdm}, rather than directly from the battery through a electromechanical relay.  This allows for cleaner electrical organisation and less complexity and chance for human error when reinstalling the \acrshort{pdm} and battery.  This is because alternatively a electromechanical relay would be required, which would be very difficult to mount suitably given the spacial constraints.  The relay would also require extra specific wiring consisting of a signal circuit to control it by virtue of the the momentary crank button on the dash, and sufficiently sized wiring connecting the relay to the starter motor and the \acrshort{pdm}. This makes for an additional ring terminal to be connected to the \acrshort{pdm} positive voltage input, which can easily allow for the mistake to be make of connecting it to the battery terminals instead, bypassing the isolation switch.
+
+Since the CBR600RR F4i is relatively small, being a motorcycle engine, the starter motor is quite simple and isn't required to put much effort into sufficiently turning the engine.  Unlike many electrical starter motors, there is no in built solenoid or relay.  It contains only a single pole for providing enough electrical power for it to operate in full where it's metal casing acts as the ground due to it's sufficient contact with the engine block, which along with the chassis is used as a common ground for insensitive devices.
+
+From previous MUR vehicles using a 70A rated relay we can estimate the maximum current draw.  Since we only need to supply current to the starter motor for no more than a few seconds, we are able to take advantage of the over current fuse characteristics of the \acrshort{pdm}\@.  If we were to draw 70A from a 25A maximum continuous channel know that we can do so for about 3.2 seconds before the fuse trips\?.  Unfortunately this is not enough time, however the \acrshort{pdm} is capable of combining output channels to allow for greater current draw.  Splicing two 25A outputs together allows for a continuous current draw of 50A.  With two channels we have about 15 seconds before the fuse trips, which is sufficient time to start the engine.
+
+\subsubsection{Regulator Rectifier Unit}
+
+The factory connectors attached to the regulator and rectifier unit are less than ideal to be used in a motorsport context.  While they are sufficient to allow more than enough current to free flow with little resistance, as simple block connectors they are susceptible to damage by high temperatures, not containing seals they are in no way protected from dust or liquids, and finally they are unnecessarily bulky.
+
+\subsubsection{Ignition Module and Firing Order}
+
+\subsection{Digital Communications Physical Mediums}
+
+\subsubsection{CAN Bus}
+Twisted pair
+Prevent cross talk
+terminating resistors
+CAN interface port considerations
+
+\subsubsection{Ethernet}
+description of 100baseT
+8P8C
+Use only 2 pairs
+other 2 pairs are usually used for active termination
+usually UTP
+ADL doesn't accommodate other 2 termination pairs anyway
+Opted for a concentric twisted shielded 4 wire cable

@@ -1,0 +1,273 @@
+%!TEX root= ./master.tex
+\chapter{Strain Gauges}
+
+\section{Abstract}
+The MUR 2013 racecar has incorporated strain gauges for the measurement of forces acting on the car's suspension components. Gauges were installed on the push/pull rods of all four corners of the racecar, allowing the Suspension and Steering team to measure the verticle forces on each wheel as the car is driven around the track. Strain gauges were also installed on the suspension A-arms at the right-rear corner of the car to also actively measure the lateral loads on this wheel.
+
+A number of custom made amplifier circuits specific to these strain gauges were constructed meeting the specific requirements and constraints of the racecar. The amplifier circuits include multi-stage gain and were designed using Altium Designer software. Each amplifier has a 3D printed housing made specifically to protect the circuits from physical damage and moisture contamination. The protective cases also fit the custom amplifier circuits made for the Brake Temperature Sensors.
+
+\section{Introduction}
+The MUR Motorsports SS Team have for a number of years now designed their race car's suspension system without data detailing the loads transmitted through the car's suspension rods. In order to design more efficient and effective suspension systems for the car, the EE team were tasked with finding and implementing an appropriate sensor method to determine these dynamic forces while the car was being driven on the track. The loads transferred through suspension components are directly proportional to the stress in each component, comparing the stress data to material properties thus allows for improved suspension optimisation. This paper will overview why and how strain gauges were used to measure the forces in the car's suspension members. The paper will also detail the design and construction of the custom signal amplifiers, the methods used in to calibrate the data output and how the data was used by the suspension team for further assessment.\\
+
+\subsection{Problem Definition}
+\subsubsection{The Suspension System}
+The MUR Motorsports 2013 race car suspension system is described as a "Double Wishbone" setup to which there are three main components. The lower and upper "A-arms" connect the wheel upright to the chassis, these restrain the horizontal movement of the wheel. The "push-pull" rod connecting the wheel upright to the spring and damper, this controls the vertical motion of the wheel. Thirdly the "tie-rod" is attached to the wheel upright to control the wheel angle for steering at the front end of the car.\\
+
+CAD figure here.\\
+
+The SS Team determined that measuring the forces transmitted through the push-pull rod on each corner of the car would be of most value for their assessment. As the suspension A-arms are all pivot mounted, the push-pull rod should theoretically transfer all vertical loads applied to the wheels through the suspension springs to the chassis. By gauging the forces through each of the four push-pull rods on the car, the SS team could develop a dynamic model for the overall load transfer of the car as it accelerates, brakes and corners to optimise the spring and damping rates of each corner of the car tor specific race tracks. A-arm force measurement would also provide a non-vital supplement to determining the full load picture. 
+
+\subsubsection{Dynamic Forces}
+The dynamic nature of a race car environment results in vibrating forces over a large range of frequencies being applied to the various suspension components. When stationary, there is a constant resting force on all the suspension members due to the weight of the car on each wheel, this is a static load that is easily assessable by the SS Team. As the car accelerates, brakes and corners there are other relatively low frequency forces applied to the suspension as the weight of the car transfers back, forward and side-to-side respectively. The uneven surface of the racetrack also generates medium frequency forces in the system as the wheels vibrate over bumps in the road, the frequency of these forces are thus dependent on both the car's speed and the shape of the undulating surface. Furthermore high frequency loads are introduced to the system through the vibration of components such as the engine and exhaust. To provide an accurate overall picture of the suspension loads, the sensor system will require a fast response time for the SS Team to break down the overall load system into components. The frequency based filtering of the sensors output will be left to the SS Team as the EE Team will be focused on providing all appropriate data for assessment.\\
+To help determine the system boundaries for the detection of strain, the SS Team's calculations suggested that the maximum load subjected to the push-pull rods would be around 2.5kN (compression for the front push rod and tension for the rear pull rod). Due to the car's body roll, a wheel can be hung above the ground in some instances, this leads to the mass of the wheel generating a force in the opposite direction to the weight load that also must be accounted for. This load should still be measured to determine the full load picture, however it will generally be a lot smaller than the maximal loads. The various forces are summarised in \ref{table:dynamicsus}.\\
+
+Summary of Forces for a Push-Pull Rod\\
+
+NEED TO CHECK THIS DATA\\
+
+\begin{table}[h]
+	\caption{Summary of Forces for a Push-Pull Rod}
+	\centering
+	\renewcommand{\arraystretch}{1.5}
+	\begin{tabular}{| l | m{4cm} | l | m{5cm} |}
+		\hline
+		\textbf{Force Type} & \textbf{Cause} & \textbf{Frequency Range} & \textbf{Est. Magnitude Range}\\ [0.5ex] 
+		\hline \hline
+		Static & Stationary vehicle weight & 0 Hz & 25\% of vehicle weight force (500-600 N)\\ [0.5ex] \hline
+		Dynamic & Weight transfer of moving car & 0 - 20 Hz & Up to 100\% of vehicle weight force (2000-2400 N)\\ [0.5ex] \hline
+		Dynamic & Road surface vibrations & 5 - 200 Hz & Up to 50\% of vehicle weight force (1000-1200 N)\\ [0.5ex] \hline
+		Dynamic & Mechanical component vibrations & 1 - 10 kHz & 0-20 N\\ [0.5ex]
+		\hline
+	\end{tabular}
+	\label{table:dynamicsus}
+\end{table}
+
+\subsubsection{System Integration}
+Designing and implementing a sensor system specifically for a race car brings about its own system restrains and requirements. The weight of the sensor and associated parts has to be kept to a minimum, the power consumption must be within the available limits of the battery and charging circuitry, if exposed the sensor has to be waterproof and the sensor must be rugged  to deal with the racing environment. In addition to this, any sensors on the car must be safe enough to be of little or no threat to the driver's wellbeing.\\
+The race car's power supplies include the unregulated +12V from the battery and regulated but current limited +12V from the PDM. There are also regulated low power voltage supplies of  +8V and +5V from the MoTeC M400, these are generally more stable voltage supplies and are better for powering sensors. All sensors are connected to the wiring loom for both power supply and signal transmission as wireless transmission and remote battery power will add significant unnecessary weight to the car. The car is equipped with two methods of data acquisition, the M400 and ADL 3 both have analogue and digital voltage inputs. Sensors are generally connected to either the M400 or the ADL 3 based on their location within the car with the ADL 3 reading front-end sensors and M400 the centre and rear sensors. The M400's analogue inputs can read both: resistance through "temperature inputs" (2 wire sensor) or voltage inputs (3 wire sensor) each with a range 0V to +15V and resolution of 3.74mV. The ADL 3's also includes resistance of "temperature" inputs and voltage inputs, these have a working range of 0V to +5.46V with 1.33mV resolution or 0V to +15V with 3.66mV resolution. The ADL 3 also has a first order 240Hz cut-off filter for these analogue inputs. This set of overall system limitations places initial restrictions on the type and use of all sensors on the car.\\
+
+\subsubsection{Measurement Approach}
+The force (F) transferred through any member is directly proportional to the stress ($\sigma$) in that member, further the member's strain ($\epsilon$) is also directly proportional to its stress. Thanks to this mechanical relationship, by knowing the Young's Modulus for a material and calculating a material's cross-sectional area, measurement of any one of the member's; stress, strain or applied force can be used to determine all three system parameters. As stress cannot be measured directly, either strain or applied load must be measured to determine all three system aspects. There are many techniques for measuring force with varying ranges of complexity, uncertainty and appropriate operating range. The main force measurement techniques however include; strain gauge load cells, Piezoelectric crystals and pressure based techniques. Strain gauges were chosen to be the most appropriate measurement technique for the race car for a number of reasons including: Extremely light-weight components, approximately linear response, operation under tension and compression, relatively low component cost and also for having flexible arrangement options.\\
+
+
+\section{Literature Review}
+\subsection{Introduction}
+The installation of strain gauges on mechanical components is a widely used method for determining stress, strain and applied force in the automotive industry (References).
+In order to develop a strong understanding in the operation, mounting and measurement of strain gauges, a range of literature was critically reviewed prior to the design phase of the system. A review was also conducted on the various amplification methods available for the measurement of the gauge outputs. 
+
+\subsection{Review}
+\subsubsection{Strain Gauge Selection}
+Strain gauges are available in a diverse range of types, shapes, sizes and resistances. Selection of the most appropriate gauge for use on the MUR 2013 car involved analysis of both manufacturer's guides \cite{Text_13}\cite{Text_14}, user reviews \cite{Text_15} and discussion with Fortburn Aerospace Consultants. From the review of \cite{Text_15} it was decided that the gauge for this application should be: fairly small due to the curvature of the suspension rods, have a T Rosette pattern (two gauges placed at 90$^\circ$ from one another) as we require temperature compensation for unidirectional strain, larger resistance for more sensitivity and less power dissipation. Semiconductor strain gauges provided another option for increasing the signal amplitude in the low-strain environment. As shown in \cite{Text_13} however, this type of gauge is less temperature stable as well as being significantly more expensive. For application to a race car that is exposed to a wide range of temperatures a metal foil type was chosen instead.
+
+\subsubsection{Strain Gauge Mounting}
+Strain gauges can be mounted in a number of different arrangements in a range of different locations on a race car chassis and suspension components. As variable resistors, strain gauges can connected and measured in a number of ways, due to the very small changes in resistance during operation most manufacturers recommend a Wheatstone Bridge arrangement (References) as shown in Figure \ref{fig:IMG_SG_Wheatstone_Numbers}. Following the recommendation by manufacturers and the small strain levels calculated for the car's suspension arms, the Wheatstone Bridge arrangement was also chosen to be the optimal measurement method.\\
+
+\begin{figure}[h!]
+	\centering
+	\includegraphics[width=0.5\textwidth]{./Images/Strain_Gauges/IMG_SG_Wheatstone_Numbers.png}
+	\caption{Numerical designation of gauges \cite{Text_9}}
+	\label{fig:IMG_SG_Wheatstone_Numbers}
+\end{figure}
+
+The number of gauges used in the Wheatstone Bridge and their ordering within the bridge can also be altered depending upon the measured strain type. The different strain gauge arrangements as part of a Wheatstone Bridge for axial strain are displayed in Figure
+%\ref{fig:IMG_SG_Wheatstone_Types}. 
+\cite{Text_9} shows in Figure \ref{fig:IMG_SG_Wheatstone_Sens} how quarter, half and full bridges have increasing sensitivity to strain, these involve the use of one, two and four gauges respectively. The different sensitivities to strain bring about the compromise of having the increased cost of more gauges to obtain a larger output signal. The strain tests conducted by \cite{Text_1} and \cite{Text_2} use quarter and half-bridge arrangements for strain testing respectively, these methods might be appropriate for high strain levels such as bending tests, however as axial strain is being measured on the MUR car, either a dual strain half-bridge or full-bridge arrangement will be needed for accurate measurement.\\ 
+Gauges perpendicular to the direction of strain slightly increase the sensitivity of the bridge due to Poisson strain, however they also provide temperature compensation for the bridge. Utilising this property, full and half bridge arrangements are more stable to changes in temperature, as detailed by \cite{Text_10}. As well as changes in temperature increasing the resistance of strain gauges, the thermal expansion of test members will also lead to output errors. Gauges designed to compensate for thermal expansion can be purchased specific to the material used \cite{Text_10} however this added cost and complexity was not included in the 2013 car. The strain testing conducted in \cite{Text_6} measures axial strain with a full bridge arrangement, this will be used as the design choice for MUR 2013.\\
+
+Image detailing each of the Wheatstone bridge types
+
+%\begin{figure}[h!]
+	%\centering	
+	%\includegraphics[width=0.5\textwidth]{Images/Strain_Gauges/IMG_SG_Wheatstone_Types.png}
+	%\caption{Table of different Wheatstone Bridge types \cite{Text_9}}
+	%\label{fig:IMG_SG_Wheatstone_Types}
+%\end{figure}
+
+\begin{figure}[h!]
+	\centering
+	\includegraphics[width=0.5\textwidth]{Images/Strain_Gauges/IMG_SG_Wheatstone_Sens.png}	
+	\caption{Table of the different Wheatstone Bridge sensitivities and temperature compensation \cite{Text_9}}
+	\label{fig:IMG_SG_Wheatstone_Sens}
+\end{figure}
+
+The physical mounting process for the strain gauges was reviewed through a number of manufacturers guides \cite{Text_11}\cite{Text_12} and in consultation with Fortburn Aerospace Consultants. An expansive range of mounting adhesives are available for strain gauges, depending on the application life, precision required, mounting surface and gauge type. Fortburn recommended use of Vishay M-Bond 200 and after review of \cite{Text_11} this was deemed the most appropriate mounting adhesive for this application. The mounting procedure of the gauges followed closely with the manufacturers' literature and advice on the process was provided by Fortburn. 
+
+\subsubsection{Signal Amplification}
+Measuring strain with a Wheatstone bridge arrangement produces a very small differential output voltage, this requires voltage amplification to improve Signal-to-Noise ratio and readability for Analogue-to-Digital conversion. To amplify these inputs a differential amplifier is required as it is the difference between the outputs that is a measure of strain. A number of styles of differential amplifier are possible such as with Field Effect Transistor pairs, Bipolar Junction Transistor pairs or with Op Amps \cite{Text_16}. With the small signal size of this differential output pair, a strain gauge amplifier must have high input impedance to reduce input current and a high Common Mode Rejection Ratio to reject unwanted noise signals common to each input \cite{Text_17}. Both the Single Op Amp differential amplifier and the Three Op Amp Instrumentation Amplifier can meet these requirements.
+
+\subsection{Conclusion}
+The literature review has confirmed that strain gauges are commonly used for testing in the automotive industry. The knowledge from a number of papers has been filtered and critiqued to compare a number of different applications and help determine the most appropriate pathway for the MUR 2013 car. There are still a number of specific uncertainties related directly to the MUR 2013 car that have not been answered in the review and will thus have to be determined during the design phase.
+
+
+\section{Design and Development}
+The design of the strain gauge measurement system for the MUR 2013 car includes a number of different components for development. The physical gaugeing of the suspension members has to be designed and calculated for prior to testing due to the significant costs associated with applying strain gauges. Along with the mechanical gaugeing process there is also the calculation, design and testing of appropriate amplifier circuits for the strain signals. Finally the system integration with the race car including protection of gauges and amplifiers also has to be designed for.
+
+\subsection{Fortburn Sponsorship: Full-bridge test rod}
+Constructing a FSAE race car each year requires a significant financial investment. Along with the University's contribution, the Melbourne University Motorsports Racing team attempt to make connections with a range of companies, looking for any kind of sponsorship available. The EE Team came into contact with Melbourne based Fortburn Aerospace \& Commercial Consultants who specialise in strain gauge mounting, with over 15 years experience. Fortburn engineers professionally mounted four 350$\Omega$ gauges in a Full-bridge arrangement on a test push-pull rod, also applying a protective silicone coating. They also provided advice on gauge selection, mounting procedure and appropriate wiring configurations. The test rod (shown in Figure \ref{fig:IMG_SG_Fortburn_Rod}) was finished to a high commercial quality level and was used as the major testing and workmanship basis for the remainder of the project.\\
+
+\begin{figure}[h!]
+	\centering
+	\includegraphics[width=0.5\textwidth]{Images/Strain_Gauges/IMG_SG_Fortburn_Rod.jpg}
+	\caption{Fortburn's Full-bridge test push-pull rod}	
+	\label{fig:IMG_SG_Fortburn_Rod}
+\end{figure}
+
+\subsection{Strain Gauge Selection}
+Prior to measuring strain in any system with strain gauges, one of the most important stages of design is to select the most appropriate gauge to suit the application requirements. Specific gauges are manufactured based on test environment temperature range, required sensitivity, test material type, expected directions of strain, duration of the application and also cost. With gauge factors ranging between 30 and 150 \cite{Text_18}, initially, semiconductor type strain gauges were considered for detecting low strain levels due to their extreme sensitivity. This was decided against however as these gauges are temperature unstable and cost significantly more than metal foil gauges. With the wide range of temperatures (estimated 5$^\circ$C to 45$^\circ$) the race car would be exposed to, the chosen gauges require relatively low temperature sensitivity. Selected gauges would also have to be small enough to fit on suspension rods with external diameter of 12mm and wrap nicely onto the surface. Smaller gauges provide less accurate results however, so this brought about a sizing compromise. Fortburn Aerospace suggested the use of Vishay Precision Group Transducer-Class\textsuperscript{\textregistered} Strain Gauges, specifically the General-purpose 90$^\circ$ tee rosette, part number: N2A-XX-S064L-350, shown in Figure \ref{fig:IMG_SG_GaugeData}. This package has the advantage of including two perpendicular gauges for temperature compensation, being small enough to fit on the suspension arms and having low temperature sensitivity. These gauges we're purchased for use unanimously throughout the project.
+
+\begin{figure}[h!]
+	\centering
+	\includegraphics[width=0.5\textwidth]{Images/Strain_Gauges/IMG_SG_GaugeData.png}
+	\caption{Vishay Precision Group Transducer-Class\textregistered General-purpose 90$^\circ$ tee rosette (N2A-XX-S064L-350) \cite{Text_19}}
+	\label{fig:IMG_SG_GaugeData}
+\end{figure}
+
+\subsection{Strain Gauge Mounting Arrangement}
+\subsubsection{Testing of Half-Bridge Arrangement}
+As detailed in the literature review of strain gauges, the recommended method for detecting the change in gauge resistance is with the use of a Wheatstone bridge. A test push rod was constructed with two 120$\Omega$ gauges (G.F. 2.01) placed in a half-bridge arrangement with temperature compensation (Figure
+%\ref{fig:IMG_SG_Wheatstone_Types}).
+When tested with an axial tension load of 100kg, the change in gauge resistance detected was very minimal, this suggested a maximum sensitivity arrangement would be required on the car. Theoretically, by looking at how the stress ($\sigma$) induces strain ($\epsilon$) on the member, the Gauge Factor can then be used to determine the expected change in resistance:
+
+\begin{align}
+	\centering
+	\sigma &=  \epsilon E\\
+	\frac{\text{Force}}{\text{Area}} &= \epsilon E \notag
+	\intertext{The cross-sectional area of the rod is determined by the outside diameter (12.7mm) and inside diameter (9.5mm)}
+	\text{Tube Area} &= \pi({r_1}^2-{r_2}^2)\\
+	&= 0.223\times10^{-3}\text{ m}^2\notag
+\end{align}
+With a force of around 1kN applied to the cylindrical rod having cross-sectional area of approximately 0.223 $\times 10^{-3} m^2$ and Young's Modulus (E) of 200GPa, we have:
+\begin{align}
+	\epsilon &= \frac{1000}{0.223\times10^{-3}\times200\times10^9}\notag\\
+	&= 0.0022 \times 10^{-3}\notag\\
+	\Delta R &= GF\epsilon R_G\\
+	\Delta R &= 2.01 \times 0.022 \times 10^{-3} \times 120\notag\\
+	\Delta R &= 0.0054\Omega\notag
+	\intertext{As the rod also includes a perpendicular temperature compensating gauge, Poisson's effect will reduce the length of this by $0.3\epsilon$ (Reference)}
+	\Delta R2 &= GF(-0.3)\epsilon R_G\notag\\
+	\Delta R2 &= -0.0016\Omega\notag
+\end{align}
+When an 8V excitation voltage is applied to the parallel gauge in position 1 and perpendicular gauge in position 2 of a Wheatstone bridge completed with 120$\Omega$ resistors, the expected differential output would be:
+\begin{align}
+	\Delta V &= V_+ - V_-\\
+	&= 8\left(\frac{R1}{R1+R2}\right) - 8\left(\frac{R4}{R4+R3}\right)\notag\\
+	&= 8\left(\frac{120.0054}{120.0054+119.9984}\right) - 8\times\frac{1}{2}\notag\\
+	\Delta V &= 0.117\text{mV}
+\end{align}
+
+This change in resistance (0.0045\%) in R1 and consequential change in output voltage ($\Delta V = 0.117$mV) is extremely small and would be impossible to measure when it is much smaller than the M400's 3.74mV discrete input levels. Due to the high noise environment of the race car, and the small signal amplitude, to achieve a large enough signal to noise ratio there must be a number of design considerations made. Firstly the strain gauge arrangement will require maximum sensitivity, which means a full-Wheatstone bridge arrangement (Figure 
+%\ref{fig:IMG_SG_Wheatstone_Types}) 
+will be needed.
+To reduce the beam surface area and thus increase strain, the possibility of narrowing the steel tube used in the suspension or using a thinner wall thickness was suggested to the suspension team. Both changes however would bring the suspension design too close to minimum safety factor and were not viable options. Electrically the Wheatstone bridge differential voltage would also require a high level of signal amplification to increase the readability of the strain signal. To reduce the signal's exposure to external noise and keep a high Signal-to-Noise ratio, it was also decided that the gauges should be as close to the amplifier as possible.
+
+\subsection{Signal Amplification}
+\subsubsection{Requirements and Constraints}
+There were a number of system limitations that had to be considered during the design of amplifiers for the strain gauge signals. The amplifier circuitry had to be powered by the race car's voltage supply; be rugged enough to survive the vibrations, heat and moisture of the racing environment; be as light as possible as well as meeting the signal amplification requirements. The Wheatstone bridge's differential voltage output can be both positive and negative, thus the signal amplifier would have to be capable of amplifying in both directions. As the car's MoTeC M400 would be used to detect the amplified signal, the amplifier would have to be designed so that its output would always be within its detection range of 0 to +15 Volts, adding an extra challenge as the negative Wheatstone outputs cannot be read within this range. Finally, to amplify the gauge signal to a larger, more readable value a very large amplification factor will be required. Large single stage gains are best avoided due to the Gain-Bandwidth limitations of amplifiers and the inaccuracies in feedback resistors. Over the 0 to +15V input range of the M400, the ECU's analogue to digital converter divides this 15V range into 3.74mV discrete levels, meaning that the amplifier output signal will have to be significantly larger than this to be of reasonable use. With such a unique set of requirements and constraints, after some market research it was decided the best course of action would be to design our own amplifier as opposed to trying to fit an outsourced product.
+
+\subsubsection{Simulation, Testing and Circuit Design}
+The initial amplifier design phase involved a number of stages of drafting potential circuits, simulation using LTSpice software and construction of breadboard prototypes to test the simulated data. A number of different designs were tested including differential amplifiers using both FET's and BJT's, general feedback amplifiers and more specific amplifier types such as Instrumentation amplifiers. Testing showed the biggest problem associated with the small output from the Wheatstone bridge was the amplifier's leakage input current. An ideal amplifier should have zero input current with infinite input resistance, LTSpice simulation found both the feedback amplifier and FET/BJT differential amplifiers have significant input current which in turn caused signal distortion as detailed in Figures \ref{fig:IMG_SG_Feedback_LT} to \ref{fig:IMG_SG_Feedback_3and4_plot}.\\
+
+\begin{figure}[h!]
+	\centering
+	\includegraphics[width=0.5\textwidth]{Images/Strain_Gauges/IMG_SG_Feedback_LT.png}
+	\caption{Feedback amplifier LTSpice model. Note that the Wheatstone bridge is a quarter bridge gauge arrangement (Gauge in position 4) that is biased so that any swing in the gauge 		resistance will still result in a positive differential output. The nodes labeled 1-4 show in the figures below how the input current affects the differential voltage.}
+	\label{fig:IMG_SG_Feedback_LT}
+\end{figure}
+
+\begin{figure}[h!]
+	\centering
+	\includegraphics[width=0.5\textwidth]{Images/Strain_Gauges/IMG_SG_Feedback_1and2_plot.png}
+	\caption{The voltages at nodes 1 (blue) and 2 (green) show the output signal from the Wheatstone bridge. The plot shows the differential voltage to be around 1.5mV.}
+	\label{fig:IMG_SG_Feedback_1and2_plot}
+\end{figure}
+
+\begin{figure}[h!]
+	\centering
+	\includegraphics[width=0.5\textwidth]{Images/Strain_Gauges/IMG_SG_Feedback_3and4_plot.png}
+	\caption{The voltages at nodes 3 (red) and 4 (green) show the output signal from the Wheatstone bridge. The plot shows the differential voltage to be around 0.44mV.}
+	\label{fig:IMG_SG_Feedback_3and4_plot}
+\end{figure}
+
+As shown in Figures \ref{fig:IMG_SG_Feedback_1and2_plot} and \ref{fig:IMG_SG_Feedback_3and4_plot} the amplifier input current passing through resistors R6 and R5 (Figure \ref{fig:IMG_SG_Feedback_LT}) causes a significant voltage drop for both signals. This attenuation of the differential resistance means that a greater amplification factor will be required to boost the signal back to readable levels. As a method of reducing the input current, both of the feedback amplifier's input and feedback resistors could be increased however as we move to excessively large resistance values further signal distortion becomes more likely.\\
+
+In order to reduce the distortion involved with input currents, an Instrumentation amplifier model was constructed and tested. As Instrumentation amplifiers have an op amp for both positive and negative input signals, they have a very high input impedance, hence limiting input current and reducing the associated distortion. Instrument amplifiers also have the benefit of an excellent Common Mode Rejection Ratio. CMRR is the ability of an amplifier to reject unwanted input signals that are common to both differential inputs. With the two signal wires from the Wheatstone bridge running closely together to the amplifier circuit, external noise on these two wires will be very similar, thus a high CMRR will help to reject common noise and read the true differential voltage signal. Figure (reference) below shows the LTSPice model of the full two-stage amplifier circuit design chosen for use on the car. 
+
+Figure of Overall Amplifier Circuit
+
+The amplifier includes an Instrumentation amplifier at the first stage to provide the high CMRR for the small input, then an feedback amplifier at the second stage to provide increased gain. The feedback amplifier also acts as a voltage adder to provide a DC bias that scales the output to be based around 4V so that the signal is within the range 0 - 8V. The resistor "RG" shown in Figure (reference) is referred to as the gain resistor and in most IC packages it is the primary gain control of the Instrumentation amplifier. The overall gain for an Instrumentation amplifier is expressed as:
+
+\begin{align}
+	G =& \frac{V_{out}}{V_+ - V_-}\notag\\
+	G =& \left(1+ \frac{2R_1}{R_G}\right)\frac{R_3}{R_2}
+\end{align}
+
+The feedback amplifier in the second stage further multiplies this gain as well as adding a portion of the 8V DC line for output scaling. The equation determining the voltage output of this amplifier is:
+
+\begin{align}
+	V_{out} =& \left(1+\frac{R_f}{R_i}\right)\left(V_{in}\frac{R_{add}}{R_{in} + R_{add}} + V_CC\frac{R_{in}}{R_{in} + R_{add}}\right)\\
+\end{align}
+
+\begin{figure}[h!]
+	\centering
+	\includegraphics[width=\textwidth]{Images/Strain_Gauges/IMG_SG_CircuitDesign.png}
+	\caption{LTSpice model of the overall amplifier circuit}
+	\label{fig:IMG_SG_CicuitDesign}
+\end{figure}
+
+Figure of output signal from multi-stage amplifier
+
+Further discussion on overall circuit design
+
+\subsubsection{Component Selection}
+Overview of the components selected for the final amplifier design
+
+\subsubsection{Printed Circuit Board Design}
+Discussion of the design process involved with the layout of the Printed Circuit Board
+
+\begin{figure}[h!]
+	\centering
+	\includegraphics[width=0.8\textwidth]{Images/Strain_Gauges/IMG_SG_Amp2DPCB.png}
+	\caption{2D Image of the Printed Circuit Board}
+	\label{fig:IMG_SG_Amp2DPCB}
+\end{figure}
+
+\begin{figure}[h!]
+	\centering
+	\includegraphics[width=0.8\textwidth]{Images/Strain_Gauges/IMG_SG_Amp3DPCB.png}
+	\caption{3D Image of the Printed Circuit Board}
+	\label{fig:IMG_SG_Amp3DPCB}
+\end{figure}
+
+\subsection{Thermocouple Amplifiers}
+This section will overview how a number of similar amplifiers were made for the rubbing thermocouples (Brake temperature sensors).
+
+\subsubsection{Casing Design}
+Disucussion of the design and 3D printing process 
+
+\section{Implementation}
+Overview of how all the components came together and the installation on the racecar. Discussion on the calibration of the gauges and how the data was used by the team. These stages have not yet occured.
+
+\subsection{Installation of Components}
+
+\subsubsection{Gauge Mounting}
+
+\subsubsection{Amplifier Installation}
+
+
+\subsection{Calibration}
+
+\subsubsection{Calibration Jig}
+
+\subsubsection{Calibration Results}
+
+
+\subsection{On Car Operation}
+
+\section{Conclusion}
+
+
+
+
+
+
+

@@ -1,0 +1,108 @@
+% !TEX TS-program = pdflatex
+% !TEX encoding = UTF-8 Unicode
+
+
+\documentclass[12pt]{report} 
+
+\usepackage[utf8]{inputenc} 
+
+
+%%% PAGE DIMENSIONS
+\usepackage{geometry} % to change the page dimensions
+\geometry{a4paper} % or letterpaper (US) or a5paper or....
+\geometry{margin=2cm} % for example, change the margins to 2 inches all round
+% \geometry{landscape} % set up the page for landscape
+%   read geometry.pdf for detailed page layout information
+
+\usepackage{graphicx} % support the \includegraphics command and options
+
+\usepackage[parfill]{parskip} % begin paragraphs with an empty line rather than an indent
+
+%%% PACKAGES
+\usepackage{booktabs} % for much better looking tables
+\usepackage{array} % for better arrays (eg matrices) in maths
+\usepackage{paralist} % very flexible & customisable lists (eg. enumerate/itemize, etc.)
+\usepackage{verbatim} % adds environment for commenting out blocks of text & for better verbatim
+%\usepackage{subfig} % make it possible to include more than one captioned figure/table in a single float
+\usepackage{amsmath} % maths stuff including align
+\usepackage{setspace} %allows different spacings of text
+\usepackage{amssymb} %more maths shiz
+\usepackage{color}   %May be necessary if you want to color links
+\usepackage{hyperref} %clickable contents
+\usepackage[acronym]{glossaries} % Defining acronyms
+\usepackage{cite} %bib shiz
+\usepackage{ifthen}
+\usepackage{subcaption}
+\usepackage{enumitem}
+\usepackage{rotating}
+
+%%% COMMANDS
+\newcommand{\?}{\ensuremath{^\texttt{\bf [CITATION~NEEDED]}}}
+\newcommand{\degree}{\ensuremath{^\circ}}	% Degrees symbol
+\makeglossaries
+
+
+\hypersetup{
+    colorlinks=true, %set true if you want colored links
+    linktoc=all,     %set to all if you want both sections and subsections linked
+    linkcolor=black,  %choose some color if you want links to stand out
+}
+\renewcommand{\baselinestretch}{1.5} %1.5 spacing
+
+%%% HEADERS & FOOTERS
+\usepackage{fancyhdr} % This should be set AFTER setting up the page geometry
+\pagestyle{fancy} % options: empty , plain , fancy
+\renewcommand{\headrulewidth}{0pt} % customise the layout...
+
+\lhead{}\chead{}\rhead{}
+\lfoot{}\cfoot{\thepage}\rfoot{}
+
+\newcommand*{\plogo}{\fbox{$\mathcal{PL}$}} 
+
+\usepackage{url}
+
+%% Define a new 'leo' style for the package that will use a smaller font.
+\makeatletter
+\def\url@leostyle{%
+  \@ifundefined{selectfont}{\def\UrlFont{\sf}}{\def\UrlFont{\small\ttfamily}}}
+\makeatother
+%% Now actually use the newly defined style.
+\urlstyle{leo}
+
+%%% SECTION TITLE APPEARANCE
+\usepackage{sectsty}
+\allsectionsfont{\sffamily\mdseries\upshape} % (See the fntguide.pdf for font help)
+% (This matches ConTeXt defaults)
+
+%%% ToC (table of contents) APPEARANCE
+\usepackage[nottoc,notlof,notlot]{tocbibind} % Put the bibliography in the ToC
+\usepackage[titles,subfigure]{tocloft} % Alter the style of the Table of Contents
+\renewcommand{\cftsecfont}{\rmfamily\mdseries\upshape}
+\renewcommand{\cftsecpagefont}{\rmfamily\mdseries\upshape} % No bold!
+
+%%% Bibliography
+
+
+%END of settings
+\begin{document}
+
+\input{Title.tex}
+%\input{acknowledge.tex}
+\onehalfspacing
+\input{abstract.tex}
+\input{acronyms.tex}
+\tableofcontents
+\newpage
+
+\input{Introduction.tex}
+\input{ee_introduction.tex}
+\input{Electrical_Distribution_Network.tex}
+\input{Telemetry.tex}
+\input{Strain_Gauges.tex}
+\input{CAN_Interface.tex}
+%\input{Organisational_Services_and_Integration.tex}
+\bibliographystyle{IEEEtran} 
+\bibliography{Telemetry_ref,Strain_Gauges_ref,CAN_Interface_ref,Troy_ref}
+
+
+\end{document}
